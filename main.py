@@ -1,6 +1,7 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-from pydantic import BaseModel, conint
+from pydantic import BaseModel, conint, field_validator
+from pydantic_core.core_schema import FieldValidationInfo
 
 
 class User(BaseModel):
@@ -17,7 +18,13 @@ class Expense(BaseModel):
     value: conint(gt=0)
     spender: User
     is_calculated: bool = False
-    # exclude_users: Optional[List[User]]
+    exclude_users: Optional[List[User]] = []
+
+    @field_validator('exclude_users')
+    def spender_not_in_exclude_users(cls, v, info: FieldValidationInfo):
+        if 'spender' in info.data and info.data['spender'] in v:
+            raise ValueError('spender cannot be excluded')
+        return v
 
 
 class Group:
@@ -40,9 +47,10 @@ class Group:
     def update_balances(self):
         for expense in self._expenses[-1::-1]:
             if expense.is_calculated is False:
-                share_amount = expense.value // len(self._users)
+                share_amount = expense.value // (len(self._users) - len(expense.exclude_users))
                 for key, rel in self._map.items():
-                    if expense.spender.username in key:
+                    if expense.spender.username in key and \
+                            all(map(lambda user: user.username not in key, expense.exclude_users)):
                         if rel.creditor.username == expense.spender.username:
                             rel.balance += share_amount
                         else:
@@ -88,6 +96,7 @@ if __name__ == "__main__":
     g = Group(name="g1", users=[mmd, ali, reza])
 
     g.add_expenses(
-        [Expense(spender=mmd, value=100000), Expense(spender=ali, value=150000), Expense(spender=mmd, value=100000)])
+        [Expense(spender=mmd, value=100000), Expense(spender=ali, value=150000),
+         Expense(spender=mmd, value=100000, exclude_users=[mmd])])
 
     print(*g.get_balances(), sep="\n")
