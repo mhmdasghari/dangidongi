@@ -61,10 +61,13 @@ class Group:
         list_of_strs = []
         for rel in self._map.values():
             if rel.balance > 0:
-                list_of_strs.append(f"{rel.debtor.username} must give {rel.balance} to {rel.creditor.username}")
+                list_of_strs.append(
+                    f"{rel.debtor.username.ljust(15)} must give    {'{0:,}'.format(rel.balance).ljust(10)} to {rel.creditor.username}")
             else:
-                list_of_strs.append(f"{rel.creditor.username} must give {-1 * rel.balance} to {rel.debtor.username}")
-        return list_of_strs
+
+                list_of_strs.append(
+                    f"{rel.creditor.username.ljust(15)} must give    {'{0:,}'.format(-1 * rel.balance).ljust(10)} to {rel.debtor.username}")
+        return sorted(list_of_strs)
 
     def add_expense(self, expense: Expense) -> None:
         self._expenses.append(expense)
@@ -90,13 +93,26 @@ class Group:
 
 if __name__ == "__main__":
     mmd = User(username="mmd")
-    ali = User(username="ali")
-    reza = User(username="reza")
+    mehdi = User(username="mehdi")
+    mojix = User(username="mojix")
+    pesar_amme = User(username="pesar_amme")
 
-    g = Group(name="g1", users=[mmd, ali, reza])
+    g = Group(name="g1", users=[mmd, mehdi, mojix, pesar_amme])
 
     g.add_expenses(
-        [Expense(spender=mmd, value=100000), Expense(spender=ali, value=150000),
-         Expense(spender=mmd, value=100000, exclude_users=[mmd])])
+        [
+            Expense(spender=mmd, value=78_000),
+            Expense(spender=mmd, value=28_000),
+            Expense(spender=mmd, value=329_000),
+            Expense(spender=mmd, value=33_000),
+            Expense(spender=mmd, value=22_000, exclude_users=[mojix, pesar_amme]),
+            Expense(spender=mmd, value=150_000, exclude_users=[mojix, pesar_amme]),
+            Expense(spender=mmd, value=142_000, exclude_users=[mojix, pesar_amme]),
+            Expense(spender=mehdi, value=250_000),
+            Expense(spender=mehdi, value=40_000),
+            Expense(spender=mehdi, value=27_000),
+            Expense(spender=mehdi, value=35_000, exclude_users=[mojix, pesar_amme]),
+            Expense(spender=mojix, value=120_000),
+        ])
 
     print(*g.get_balances(), sep="\n")
